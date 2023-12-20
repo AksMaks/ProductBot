@@ -11,6 +11,7 @@ module.exports = {
         id serial PRIMARY KEY,
         order_id INTEGER NOT NULL,
         variant_id INTEGER  NOT NULL,
+        number INTEGER NOT NULL DEFAULT 1,
         CONSTRAINT fk_order FOREIGN KEY(order_id) REFERENCES orders(id),
         CONSTRAINT fk_variant FOREIGN KEY(variant_id) REFERENCES product_variant(id)
       );

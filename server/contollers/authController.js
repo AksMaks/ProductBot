@@ -1,5 +1,4 @@
 const db = require("../db/db.js");
-const {validationResult} = require("express-validator");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const jwt = require('jsonwebtoken');
@@ -16,11 +15,6 @@ const generateAccessToken = (userId) => {
 class authController {
     async registration(req, res) {
         try{
-            const errors = validationResult(req);
-            if(!errors.isEmpty()){
-                return res.status(400).json({message: 'Ошибки при регистрации', errors: errors})
-            }
-
             const {login, password} = req.body
 
             await db.sequelize.transaction(async  transaction => {

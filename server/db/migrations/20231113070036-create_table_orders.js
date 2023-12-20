@@ -11,8 +11,9 @@ module.exports = {
         id serial PRIMARY KEY,
         address VARCHAR ( 255 ) NOT NULL,
         client_id INTEGER NOT NULL,
-        date DATE NOT NULL,
+        date TIMESTAMP NOT NULL,
         approved BOOLEAN NOT NULL DEFAULT false,
+        delivered BOOLEAN NOT NULL DEFAULT false,
         CONSTRAINT fk_client FOREIGN KEY(client_id) REFERENCES client(id)
       );
       `

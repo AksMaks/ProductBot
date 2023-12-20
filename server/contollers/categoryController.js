@@ -1,4 +1,5 @@
 const db = require("../db/db.js");
+const {validationResult} = require("express-validator");
 
 class clientController {
     async create(req, res) {
@@ -41,7 +42,7 @@ class clientController {
                         id,
                         name
                     FROM public.category      
-                    WHERE id = ?;
+                    WHERE id = ? and active = true;
                     `,
                     {replacements: [categoryId]},
                     {
@@ -68,13 +69,14 @@ class clientController {
                         id,
                         name
                     FROM public.category
+                    WHERE active = true
                     `,
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction
                     }
                 ).then(result => {
-                    categories = result[0]
+                    categories = result
                 })
             })
             return res.json(categories)
@@ -86,9 +88,8 @@ class clientController {
     
     async update(req, res) {
         try{
-            const {categoryId, name} = req.body
+            const {categoryId, categoryName} = req.body
 
-            let categories;
             await db.sequelize.transaction(async  transaction => {
                 await db.sequelize.query(
                     `
@@ -96,16 +97,18 @@ class clientController {
                     SET name = ?
                     WHERE id = ?;
                     `,
-                    {replacements: [name, categoryId]},
+                    {replacements: [categoryName, categoryId]},
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction
                     }
                 ).then(result => {
-                    categories = result[0]
+                    if (result[1]["rowCount"] == 0) {
+                        return res.status(400).json({message: `Проверьте входные данные`})
+                    } 
                 })
             })
-            return res.json(categories)
+            return res.json({message:"OK"})
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})
@@ -130,16 +133,16 @@ class clientController {
                     transaction: transaction
                     }
                 ).then(result => {
-                    categories = result[0]
+                    if (result[1]["rowCount"] == 0) {
+                        return res.status(400).json({message: `Проверьте входные данные`})
+                    } 
                 })
             })
-            return res.json(categories)
+            return res.json({message:"OK"})
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})
         }
     }
-
-    
 }
 module.exports = new clientController();

@@ -41,7 +41,7 @@ class clientController {
                         name,
                         product_id
                     FROM public.product_variant      
-                    WHERE id = ?;
+                    WHERE id = ? and active = true;
                     `,
                     {replacements: [productVariantId]},
                     {
@@ -69,16 +69,17 @@ class clientController {
                         name,
                         product_id
                     FROM public.product_variant
+                    WHERE active = true
                     `,
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction
                     }
                 ).then(result => {
-                    productVariants = result[0]
+                    productVariants = result
                 })
             })
-            return res.json(products)
+            return res.json(productVariants)
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})
@@ -87,9 +88,8 @@ class clientController {
     
     async update(req, res) {
         try{
-            const {productVariantId, productId, name} = req.body
+            const {productVariantId, productId, productVariantName} = req.body
 
-            let productVariants;
             await db.sequelize.transaction(async  transaction => {
                 await db.sequelize.query(
                     `
@@ -97,16 +97,18 @@ class clientController {
                     SET name = ?, product_id = ?
                     WHERE id = ?;
                     `,
-                    {replacements: [name, productId, productVariantId]},
+                    {replacements: [productVariantName, productId, productVariantId]},
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction
                     }
                 ).then(result => {
-                    productVariants = result[0]
+                    if (result[0][0] == 0) {
+                        return res.status(400).json({message: `Проверьте входные данные`})
+                    }
                 })
             })
-            return res.json(productVariants)
+            return res.json({message:"OK"})
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})
@@ -117,7 +119,6 @@ class clientController {
         try{
             const {productVariantId} = req.body
 
-            let productVariants;
             await db.sequelize.transaction(async  transaction => {
                 await db.sequelize.query(
                     `
@@ -131,10 +132,12 @@ class clientController {
                     transaction: transaction
                     }
                 ).then(result => {
-                    productVariants = result[0]
+                    if (result[0][0] == 0) {
+                        return res.status(400).json({message: `Проверьте входные данные`})
+                    }
                 })
             })
-            return res.json(productVariants)
+            return res.json({message:"OK"})
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})

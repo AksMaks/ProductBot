@@ -22,10 +22,14 @@ app.use(express.static('static'))
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-const authRouter = require("./routes/authRouter.js")
-
 //Маршруты
-app.use("/auth", authRouter)
+app.use("/auth", require("./routes/authRouter.js"))
+app.use("/category", require("./routes/categoryRouter.js"))
+app.use("/product", require("./routes/productRouter.js"))
+app.use("/productVariant", require("./routes/productVariantRouter.js"))
+app.use("/productAdditive", require("./routes/productAdditiveRouter.js"))
+app.use("/client", require("./routes/clientRouter.js"))
+app.use("/order", require("./routes/orderRouter.js"))
 
 async function start() {
   try{

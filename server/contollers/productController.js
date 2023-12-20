@@ -41,7 +41,7 @@ class clientController {
                         name,
                         category_id
                     FROM public.product      
-                    WHERE id = ?;
+                    WHERE id = ? and active = true;
                     `,
                     {replacements: [productId]},
                     {
@@ -69,13 +69,14 @@ class clientController {
                         name,
                         category_id
                     FROM public.product
+                    WHERE active = true
                     `,
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction
                     }
                 ).then(result => {
-                    products = result[0]
+                    products = result
                 })
             })
             return res.json(products)
@@ -87,7 +88,7 @@ class clientController {
     
     async update(req, res) {
         try{
-            const {productId, categoryId, name} = req.body
+            const {productId, categoryId, productName} = req.body
 
             let products;
             await db.sequelize.transaction(async  transaction => {
@@ -97,16 +98,18 @@ class clientController {
                     SET name = ?, category_id = ?
                     WHERE id = ?;
                     `,
-                    {replacements: [name, categoryId, productId]},
+                    {replacements: [productName, categoryId, productId]},
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction
                     }
                 ).then(result => {
-                    products = result[0]
+                    if (result[1]["rowCount"] == 0) {
+                        return res.status(400).json({message: `Проверьте входные данные`})
+                    }
                 })
             })
-            return res.json(products)
+            return res.json({message:"OK"})
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})
@@ -131,10 +134,12 @@ class clientController {
                     transaction: transaction
                     }
                 ).then(result => {
-                    products = result[0]
+                    if (result[1]["rowCount"] == 0) {
+                        return res.status(400).json({message: `Проверьте входные данные`})
+                    } 
                 })
             })
-            return res.json(products)
+            return res.json({message:"OK"})
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})

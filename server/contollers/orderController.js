@@ -3,15 +3,46 @@ const db = require("../db/db.js");
 class clientController {
     async create(req, res) {
         try{
-            const {productAdditiveName, variantId} = req.body
+            const {clientId, address, date, list} = req.body
 
             await db.sequelize.transaction(async  transaction => {
                 await db.sequelize.query(`
-                    INSERT INTO public.product_additive
-                    (name, variant_id)
-                    VALUES(?, ?);
+                    INSERT INTO public.orders
+                    (client_id, address, date)
+                    VALUES(?, ?, ?);
                     `,
-                    {replacements: [productAdditiveName, variantId]},
+                    {replacements: [clientId, address, date]},
+                    {
+                    type: db.sequelize.QueryTypes.INSERT,
+                    transaction: transaction
+                    }
+                )
+                let orderId;
+                await db.sequelize.query(`
+                    SELECT id 
+                    FROM public.orders
+                    WHERE client_id = ? 
+                    ORDER BY ID DESC
+                    LIMIT 1
+                    `,
+                    {replacements: [clientId]},
+                    {
+                    type: db.sequelize.QueryTypes.INSERT,
+                    transaction: transaction
+                    }
+                ).then(result => {
+                    orderId = result[0][0]["id"]
+                })
+                console.log(orderId)
+                //пербразование входящего массива в sql строку для загрузки в бд
+                let sql_order_list = list.map(el => {
+                    return "('"+orderId+"','"+el["variant_id"]+"','"+el["number"]+"')"
+                }).join(',')
+
+                await db.sequelize.query(`
+                    INSERT INTO public.order_list
+                    (order_id, variant_id, number)
+                    VALUES`+sql_order_list,
                     {
                     type: db.sequelize.QueryTypes.INSERT,
                     transaction: transaction
@@ -31,28 +62,41 @@ class clientController {
 
     async get(req, res) {
         try{
-            const {productAdditiveId} = req.body
+            const {orderId} = req.body
 
-            let productAdditives;
+            let orders_list;
+            let order;
             await db.sequelize.transaction(async  transaction => {
                 await db.sequelize.query(`
-                    SELECT 
-                        id,
-                        name,
-                        variant_id
-                    FROM public.product_additive      
-                    WHERE id = ?;
+                    SELECT id, order_id, variant_id
+                    FROM public.order_list                  
+                    WHERE order_id = ?;
                     `,
-                    {replacements: [productAdditiveId]},
+                    {replacements: [orderId]},
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction
                     }
                 ).then(result => {
-                    productAdditives = result[0]
+                    orders_list = result[0]
                 })
+
+                await db.sequelize.query(`
+                    SELECT id, address, client_id, "date", approved, delivered
+                    FROM public.orders      
+                    WHERE id = ?;
+                    `,
+                    {replacements: [orderId]},
+                    {
+                    type: db.sequelize.QueryTypes.SELECT,
+                    transaction: transaction
+                    }
+                ).then(result => {
+                    order = result[0]
+                })
+                
             })
-            return res.json(productAdditives)
+            return res.json({...order[0], list: orders_list})
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})
@@ -61,24 +105,21 @@ class clientController {
     
     async gets(req, res) {
         try{
-            let productAdditives;
+            let orders;
             await db.sequelize.transaction(async  transaction => {
                 await db.sequelize.query(`
-                    SELECT 
-                        id,
-                        name,
-                        variant_id
-                    FROM public.product_additive
+                    SELECT id, address, client_id, "date", approved, delivered
+                    FROM public.orders;                
                     `,
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction
                     }
                 ).then(result => {
-                    productAdditives = result
+                    orders = result
                 })
             })
-            return res.json(productAdditives)
+            return res.json(orders)
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})
@@ -87,45 +128,16 @@ class clientController {
     
     async update(req, res) {
         try{
-            const {productAdditiveId, variantId, productAdditiveName} = req.body
+            const {orderId, approved, delivered} = req.body
 
             await db.sequelize.transaction(async  transaction => {
                 await db.sequelize.query(
                     `
-                    UPDATE product_additive
-                    SET name = ?, variant_id = ?
+                    UPDATE orders
+                    SET approved = ?, delivered = ?
                     WHERE id = ?;
                     `,
-                    {replacements: [productAdditiveName, variantId, productAdditiveId]},
-                    {
-                    type: db.sequelize.QueryTypes.SELECT,
-                    transaction: transaction
-                    }
-                ).then(result => {
-                    if (result[0][0] == 0) {
-                        return res.status(400).json({message: `Проверьте входные данные`})
-                    }
-                })
-            })
-            return res.json({message:"OK"})
-        }catch(e){
-            console.log(e)
-            res.status(400).json({message: e})
-        }
-    }
-    
-    async delete(req, res) {
-        try{
-            const {productAdditiveId} = req.body
-
-            await db.sequelize.transaction(async  transaction => {
-                await db.sequelize.query(
-                    `
-                    UPDATE product_additive
-                    SET active = false
-                    WHERE id = ?;
-                    `,
-                    {replacements: [productAdditiveId]},
+                    {replacements: [approved, delivered, orderId]},
                     {
                     type: db.sequelize.QueryTypes.SELECT,
                     transaction: transaction

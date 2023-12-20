@@ -75,7 +75,7 @@ class clientController {
                     transaction: transaction
                     }
                 ).then(result => {
-                    clients = result[0]
+                    clients = result
                 })
             })
             return res.json(clients)
@@ -103,10 +103,12 @@ class clientController {
                     transaction: transaction
                     }
                 ).then(result => {
-                    clients = result[0]
+                    if (result[0][0] == 0) {
+                        return res.status(400).json({message: `Проверьте входные данные`})
+                    }
                 })
             })
-            return res.json(clients)
+            return res.json({message:"OK"})
         }catch(e){
             console.log(e)
             res.status(400).json({message: e})
